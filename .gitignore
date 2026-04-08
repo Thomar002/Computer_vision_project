@@ -1,0 +1,18 @@
+# Datasets (too large for GitHub)
+Datasets/
+
+# Checkpoints
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Outputs (generated files)
+outputs/
+
+# Environment
+.env
+*.egg-info/
