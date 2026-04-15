@@ -1,8 +1,10 @@
 # Datasets (too large for GitHub)
 Datasets/
+Datasets.zip
 
 # Checkpoints
 checkpoints/
+*.pth
 
 # Python
 __pycache__/
@@ -15,4 +17,6 @@ outputs/
 
 # Environment
 .env
+venv/
+.venv/
 *.egg-info/

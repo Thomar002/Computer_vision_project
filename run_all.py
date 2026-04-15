@@ -29,38 +29,46 @@ def main():
 
     if not args.skip_training:
         # Train AOD-Net
-        run_command(
+        code = run_command(
             f'{python} train.py --model aodnet --epochs {args.epochs} '
             f'--batch_size {args.batch_size} --image_size {args.image_size}',
             "Training AOD-Net"
         )
+        if code != 0:
+            sys.exit(code)
 
         # Train DCPDN
-        run_command(
+        code = run_command(
             f'{python} train.py --model dcpdn --epochs {args.epochs} '
             f'--batch_size {args.batch_size} --image_size {args.image_size}',
             "Training DCPDN"
         )
+        if code != 0:
+            sys.exit(code)
 
         # Train Color-Constrained
-        run_command(
+        code = run_command(
             f'{python} train.py --model color --epochs {args.epochs} '
             f'--batch_size {args.batch_size} --image_size {args.image_size}',
             "Training Color-Constrained Dehazing"
         )
+        if code != 0:
+            sys.exit(code)
 
     # Evaluate all methods
-    run_command(
+    code = run_command(
         f'{python} evaluate.py --image_size {args.image_size} '
-        f'--batch_size 4 --dataset both',
-        "Evaluating all methods on RESIDE and O-HAZE"
+        f'--batch_size 4 --dataset all',
+        "Evaluating all methods on SOTS (indoor/outdoor) and O-HAZE"
     )
+    if code != 0:
+        sys.exit(code)
 
     print("\n" + "="*60)
     print("  EXPERIMENT COMPLETE")
     print("="*60)
     print(f"\nResults saved to: outputs/")
-    print("Check outputs/comparison_RESIDE-SOTS.png and outputs/comparison_O-HAZE.png")
+    print("Check outputs/ for comparison images (SOTS-Indoor, SOTS-Outdoor, O-HAZE)")
 
 
 if __name__ == "__main__":

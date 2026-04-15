@@ -1,24 +1,32 @@
-"""Load trained AOD-Net and DCPDN checkpoints (if they exist) and save readable results to a text file."""
+"""Load trained checkpoints and save readable evaluation results to a text file."""
 import os
+import argparse
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datetime import datetime
 
-from config import (RESIDE_SOTS_HAZY, RESIDE_SOTS_GT, OHAZE_HAZY, OHAZE_GT,
-                    CHECKPOINTS_DIR, OUTPUTS_DIR, DCP_CONFIG)
-from datasets import RESIDEOutdoorTestDataset, OHAZEDataset
+from config import (SOTS_INDOOR_HAZY, SOTS_INDOOR_GT, SOTS_OUTDOOR_HAZY, SOTS_OUTDOOR_GT,
+                    OHAZE_HAZY, OHAZE_GT, CHECKPOINTS_DIR, OUTPUTS_DIR, DCP_CONFIG)
+from datasets import RESIDETestDataset, OHAZEDataset
 from metrics import compute_psnr, compute_ssim
 from methods.dcp import DarkChannelPrior
 from methods.aodnet import AODNet
 from methods.dcpdn import DCPDN
+from methods.color_dehaze import ColorConstrainedDehaze
 
 
 def get_device():
     if torch.cuda.is_available():
         return torch.device('cuda')
     return torch.device('cpu')
+
+
+def best_checkpoint_path(model_name, train_set):
+    """Return best-checkpoint path using the same split suffix as train.py."""
+    suffix = "" if train_set == "auto" else f"_{train_set}"
+    return os.path.join(CHECKPOINTS_DIR, f"{model_name}{suffix}_best.pth")
 
 
 def eval_dcp(dcp, dataloader, desc):
@@ -41,6 +49,8 @@ def eval_model(model, dataloader, model_name, device, desc):
             hazy_dev = hazy.to(device)
             if model_name == "DCPDN":
                 output, _, _ = model(hazy_dev)
+            elif model_name == "Color-Constrained":
+                output, _ = model(hazy_dev)
             else:
                 output = model(hazy_dev)
             output = output.cpu()
@@ -51,16 +61,26 @@ def eval_model(model, dataloader, model_name, device, desc):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Show dehazing evaluation results")
+    parser.add_argument("--train_set", type=str, default="ots",
+                        choices=["auto", "its", "ots"],
+                        help="Checkpoint split to load: ots loads *_ots_best.pth")
+    args = parser.parse_args()
+
     device = get_device()
     image_size = 256
     batch_size = 4
 
     # Load datasets
     datasets = {}
-    if os.path.exists(RESIDE_SOTS_HAZY) and os.path.exists(RESIDE_SOTS_GT):
-        ds = RESIDEOutdoorTestDataset(RESIDE_SOTS_HAZY, RESIDE_SOTS_GT, image_size)
+    if os.path.exists(SOTS_INDOOR_HAZY) and os.path.exists(SOTS_INDOOR_GT):
+        ds = RESIDETestDataset(SOTS_INDOOR_HAZY, SOTS_INDOOR_GT, image_size)
         if len(ds) > 0:
-            datasets["RESIDE-SOTS"] = DataLoader(ds, batch_size=batch_size, num_workers=0)
+            datasets["SOTS-Indoor"] = DataLoader(ds, batch_size=batch_size, num_workers=0)
+    if os.path.exists(SOTS_OUTDOOR_HAZY) and os.path.exists(SOTS_OUTDOOR_GT):
+        ds = RESIDETestDataset(SOTS_OUTDOOR_HAZY, SOTS_OUTDOOR_GT, image_size)
+        if len(ds) > 0:
+            datasets["SOTS-Outdoor"] = DataLoader(ds, batch_size=batch_size, num_workers=0)
     if os.path.exists(OHAZE_HAZY) and os.path.exists(OHAZE_GT):
         ds = OHAZEDataset(OHAZE_HAZY, OHAZE_GT, image_size)
         if len(ds) > 0:
@@ -73,7 +93,7 @@ def main():
     # Check which models have checkpoints
     models = {}
 
-    aod_path = os.path.join(CHECKPOINTS_DIR, "aodnet_best.pth")
+    aod_path = best_checkpoint_path("aodnet", args.train_set)
     if os.path.exists(aod_path):
         aodnet = AODNet().to(device)
         aodnet.load_state_dict(torch.load(aod_path, map_location=device, weights_only=True))
@@ -82,7 +102,7 @@ def main():
     else:
         print(f"AOD-Net checkpoint not found at {aod_path} - skipping")
 
-    dcpdn_path = os.path.join(CHECKPOINTS_DIR, "dcpdn_best.pth")
+    dcpdn_path = best_checkpoint_path("dcpdn", args.train_set)
     if os.path.exists(dcpdn_path):
         dcpdn = DCPDN().to(device)
         dcpdn.load_state_dict(torch.load(dcpdn_path, map_location=device, weights_only=True))
@@ -90,6 +110,15 @@ def main():
         print(f"Loaded DCPDN from {dcpdn_path}")
     else:
         print(f"DCPDN checkpoint not found at {dcpdn_path} - skipping")
+
+    color_path = best_checkpoint_path("color_dehaze", args.train_set)
+    if os.path.exists(color_path):
+        color_model = ColorConstrainedDehaze().to(device)
+        color_model.load_state_dict(torch.load(color_path, map_location=device, weights_only=True))
+        models["Color-Constrained"] = color_model
+        print(f"Loaded Color-Constrained from {color_path}")
+    else:
+        print(f"Color-Constrained checkpoint not found at {color_path} - skipping")
 
     if not models:
         print("No trained models found. Run training first.")
@@ -119,6 +148,7 @@ def main():
     lines.append(f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append(f"  Device: {device}")
     lines.append(f"  Image size: {image_size}x{image_size}")
+    lines.append(f"  Checkpoint split: {args.train_set}")
     lines.append("=" * 70)
     lines.append("")
 
@@ -156,7 +186,12 @@ def main():
     lines.append("")
     for model_name, model in models.items():
         params = sum(p.numel() for p in model.parameters())
-        ckpt = aod_path if model_name == "AOD-Net" else dcpdn_path
+        if model_name == "AOD-Net":
+            ckpt = aod_path
+        elif model_name == "DCPDN":
+            ckpt = dcpdn_path
+        else:
+            ckpt = color_path
         size_mb = os.path.getsize(ckpt) / (1024 * 1024)
         lines.append(f"  {model_name}:")
         lines.append(f"    Parameters:      {params:,}")

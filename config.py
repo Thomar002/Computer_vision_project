@@ -7,14 +7,19 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Dataset paths
 DATASETS_DIR = os.path.join(BASE_DIR, "Datasets")
 
-# RESIDE outdoor (SOTS test set)
-RESIDE_SOTS_HAZY = os.path.join(DATASETS_DIR, "RESIDE-dataset", "outdoor", "hazy")
-RESIDE_SOTS_GT = os.path.join(DATASETS_DIR, "RESIDE-dataset", "outdoor", "clear")
+# ITS-RESIDE (Indoor Training Set)
+ITS_TRAIN_HAZY = os.path.join(DATASETS_DIR, "ITS-reside", "hazy")
+ITS_TRAIN_GT = os.path.join(DATASETS_DIR, "ITS-reside", "clear")
 
-# RESIDE OUT (for training)
-RESIDE_OUT_TRAIN_GT = os.path.join(DATASETS_DIR, "RESIDE OUT", "RESIDE OUT", "train", "GT")
-RESIDE_OUT_TEST_HAZY = os.path.join(DATASETS_DIR, "RESIDE OUT", "RESIDE OUT", "test", "hazy")
-RESIDE_OUT_TEST_GT = os.path.join(DATASETS_DIR, "RESIDE OUT", "RESIDE OUT", "test", "GT")
+# OTS-RESIDE (Outdoor Training Set)
+OTS_TRAIN_HAZY = os.path.join(DATASETS_DIR, "OTS-reside", "hazy")
+OTS_TRAIN_GT = os.path.join(DATASETS_DIR, "OTS-reside", "clear")
+
+# SOTS (Testing)
+SOTS_INDOOR_HAZY = os.path.join(DATASETS_DIR, "SOTS", "indoor", "hazy")
+SOTS_INDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "indoor", "gt")
+SOTS_OUTDOOR_HAZY = os.path.join(DATASETS_DIR, "SOTS", "outdoor", "hazy")
+SOTS_OUTDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "outdoor", "gt")
 
 # O-HAZE
 OHAZE_HAZY = os.path.join(DATASETS_DIR, "O-HAZY", "hazy")

@@ -9,9 +9,9 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
 
-from config import (RESIDE_SOTS_HAZY, RESIDE_SOTS_GT, OHAZE_HAZY, OHAZE_GT,
-                    CHECKPOINTS_DIR, OUTPUTS_DIR, DCP_CONFIG)
-from datasets import RESIDEOutdoorTestDataset, OHAZEDataset
+from config import (SOTS_INDOOR_HAZY, SOTS_INDOOR_GT, SOTS_OUTDOOR_HAZY, SOTS_OUTDOOR_GT,
+                    OHAZE_HAZY, OHAZE_GT, CHECKPOINTS_DIR, OUTPUTS_DIR, DCP_CONFIG)
+from datasets import RESIDETestDataset, OHAZEDataset
 from metrics import compute_psnr, compute_ssim
 from methods.dcp import DarkChannelPrior
 from methods.aodnet import AODNet
@@ -23,6 +23,16 @@ def get_device():
     if torch.cuda.is_available():
         return torch.device('cuda')
     return torch.device('cpu')
+
+
+def count_images(directory):
+    """Count image files in a directory."""
+    if not os.path.isdir(directory):
+        return 0
+    return sum(
+        1 for name in os.listdir(directory)
+        if name.lower().endswith((".jpg", ".jpeg", ".png"))
+    )
 
 
 def evaluate_dcp(dataloader, dataset_name):
@@ -102,6 +112,12 @@ def load_model(model_class, checkpoint_name, device):
     return model
 
 
+def best_checkpoint_name(model_name, train_set):
+    """Return best-checkpoint filename using the same split suffix as train.py."""
+    suffix = "" if train_set == "auto" else f"_{train_set}"
+    return f"{model_name}{suffix}_best.pth"
+
+
 def save_visual_comparison(all_results, dataset_name, output_dir):
     """Save visual comparison grid for the first few images."""
     os.makedirs(output_dir, exist_ok=True)
@@ -148,8 +164,11 @@ def main():
     parser.add_argument("--image_size", type=int, default=256)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_workers", type=int, default=4)
-    parser.add_argument("--dataset", type=str, default="both",
-                        choices=["reside", "ohaze", "both"])
+    parser.add_argument("--dataset", type=str, default="all",
+                        choices=["sots_indoor", "sots_outdoor", "ohaze", "all"])
+    parser.add_argument("--train_set", type=str, default="ots",
+                        choices=["auto", "its", "ots"],
+                        help="Checkpoint split to load: ots loads *_ots_best.pth")
     args = parser.parse_args()
 
     device = get_device()
@@ -157,21 +176,59 @@ def main():
 
     # Prepare datasets
     datasets_to_eval = {}
-    if args.dataset in ("reside", "both"):
-        reside_ds = RESIDEOutdoorTestDataset(
-            RESIDE_SOTS_HAZY, RESIDE_SOTS_GT, args.image_size)
-        datasets_to_eval["RESIDE-SOTS"] = DataLoader(
-            reside_ds, batch_size=args.batch_size, num_workers=args.num_workers)
+    skipped_datasets = []
+    if args.dataset in ("sots_indoor", "all"):
+        ds = RESIDETestDataset(SOTS_INDOOR_HAZY, SOTS_INDOOR_GT, args.image_size)
+        if len(ds) > 0:
+            datasets_to_eval["SOTS-Indoor"] = DataLoader(
+                ds, batch_size=args.batch_size, num_workers=args.num_workers)
+        else:
+            skipped_datasets.append(
+                f"SOTS-Indoor: 0 matched pairs "
+                f"(hazy files={count_images(SOTS_INDOOR_HAZY)}, "
+                f"gt files={count_images(SOTS_INDOOR_GT)})"
+            )
 
-    if args.dataset in ("ohaze", "both"):
+    if args.dataset in ("sots_outdoor", "all"):
+        ds = RESIDETestDataset(SOTS_OUTDOOR_HAZY, SOTS_OUTDOOR_GT, args.image_size)
+        if len(ds) > 0:
+            datasets_to_eval["SOTS-Outdoor"] = DataLoader(
+                ds, batch_size=args.batch_size, num_workers=args.num_workers)
+        else:
+            skipped_datasets.append(
+                f"SOTS-Outdoor: 0 matched pairs "
+                f"(hazy files={count_images(SOTS_OUTDOOR_HAZY)}, "
+                f"gt files={count_images(SOTS_OUTDOOR_GT)})"
+            )
+
+    if args.dataset in ("ohaze", "all"):
         ohaze_ds = OHAZEDataset(OHAZE_HAZY, OHAZE_GT, args.image_size)
-        datasets_to_eval["O-HAZE"] = DataLoader(
-            ohaze_ds, batch_size=args.batch_size, num_workers=args.num_workers)
+        if len(ohaze_ds) > 0:
+            datasets_to_eval["O-HAZE"] = DataLoader(
+                ohaze_ds, batch_size=args.batch_size, num_workers=args.num_workers)
+        else:
+            skipped_datasets.append(
+                f"O-HAZE: 0 matched pairs "
+                f"(hazy files={count_images(OHAZE_HAZY)}, "
+                f"gt files={count_images(OHAZE_GT)})"
+            )
+
+    if skipped_datasets:
+        print("Dataset checks:")
+        for line in skipped_datasets:
+            print(f"  - {line}")
+
+    if not datasets_to_eval:
+        raise RuntimeError(
+            "No evaluation datasets available. Populate the expected hazy/GT folders "
+            "before running evaluate.py."
+        )
 
     # Load models
-    aodnet = load_model(AODNet, "aodnet_best.pth", device)
-    dcpdn = load_model(DCPDN, "dcpdn_best.pth", device)
-    color_model = load_model(ColorConstrainedDehaze, "color_dehaze_best.pth", device)
+    aodnet = load_model(AODNet, best_checkpoint_name("aodnet", args.train_set), device)
+    dcpdn = load_model(DCPDN, best_checkpoint_name("dcpdn", args.train_set), device)
+    color_model = load_model(
+        ColorConstrainedDehaze, best_checkpoint_name("color_dehaze", args.train_set), device)
 
     # Evaluate all methods on all datasets
     print("\n" + "=" * 70)

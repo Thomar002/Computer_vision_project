@@ -199,13 +199,22 @@ class ColorConsistencyLoss(nn.Module):
         mean_loss = F.mse_loss(out_mean, tgt_mean)
         std_loss = F.mse_loss(out_std, tgt_std)
 
-        # Inter-channel correlation
-        B = output.shape[0]
-        out_flat = output.view(B, 3, -1)
-        tgt_flat = target.view(B, 3, -1)
+        # Inter-channel correlation. Use explicit channel-wise reductions to avoid
+        # CUDA batched GEMM paths that can fail on this environment.
+        out_flat = output.reshape(output.shape[0], 3, -1).contiguous()
+        tgt_flat = target.reshape(target.shape[0], 3, -1).contiguous()
+        def correlation_matrix(flat):
+            r = flat[:, 0]
+            g = flat[:, 1]
+            b = flat[:, 2]
+            return torch.stack([
+                torch.stack([(r * r).mean(dim=1), (r * g).mean(dim=1), (r * b).mean(dim=1)], dim=1),
+                torch.stack([(g * r).mean(dim=1), (g * g).mean(dim=1), (g * b).mean(dim=1)], dim=1),
+                torch.stack([(b * r).mean(dim=1), (b * g).mean(dim=1), (b * b).mean(dim=1)], dim=1),
+            ], dim=1)
 
-        out_corr = torch.bmm(out_flat, out_flat.transpose(1, 2)) / out_flat.shape[2]
-        tgt_corr = torch.bmm(tgt_flat, tgt_flat.transpose(1, 2)) / tgt_flat.shape[2]
+        out_corr = correlation_matrix(out_flat)
+        tgt_corr = correlation_matrix(tgt_flat)
 
         corr_loss = F.mse_loss(out_corr, tgt_corr)
 
