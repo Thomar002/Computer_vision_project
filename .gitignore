@@ -8,9 +8,6 @@ __pycache__/
 *.pyo
 .ipynb_checkpoints/
 
-# Outputs (generated files)
-outputs/
-
 # Environment
 .env
 venv/
