@@ -2,10 +2,6 @@
 Datasets/
 Datasets.zip
 
-# Checkpoints
-checkpoints/
-*.pth
-
 # Python
 __pycache__/
 *.pyc
