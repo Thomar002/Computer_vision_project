@@ -1,0 +1,96 @@
+======================================================================
+  DEHAZING EVALUATION RESULTS
+  Generated: 2026-04-15 14:19:24
+  Device: cuda
+  Image size: 256x256
+  Checkpoint split: ots
+======================================================================
+
+Method               Dataset         PSNR (dB)    SSIM       Num Images
+----------------------------------------------------------------------
+DCP                  SOTS-Indoor     21.05        0.8746     500       
+AOD-Net              SOTS-Indoor     17.20        0.7891     500       
+DCPDN                SOTS-Indoor     20.56        0.8103     500       
+Color-Constrained    SOTS-Indoor     21.75        0.8704     500       
+DCP                  SOTS-Outdoor    17.57        0.8709     500       
+AOD-Net              SOTS-Outdoor    23.55        0.9059     500       
+DCPDN                SOTS-Outdoor    26.00        0.8786     500       
+Color-Constrained    SOTS-Outdoor    26.77        0.9513     500       
+DCP                  O-HAZE          16.68        0.7340     45        
+AOD-Net              O-HAZE          16.94        0.6999     45        
+DCPDN                O-HAZE          17.18        0.7027     45        
+Color-Constrained    O-HAZE          16.92        0.7401     45        
+----------------------------------------------------------------------
+
+======================================================================
+  DATASET: SOTS-Indoor
+======================================================================
+
+Method               Mean PSNR    Std PSNR     Min PSNR     Max PSNR    
+----------------------------------------------------------------------
+DCP                  21.05        2.52         13.75        27.57       
+AOD-Net              17.20        3.96         8.27         25.70       
+DCPDN                20.56        2.95         13.68        28.42       
+Color-Constrained    21.75        3.02         13.15        31.43       
+
+Method               Mean SSIM    Std SSIM     Min SSIM     Max SSIM    
+----------------------------------------------------------------------
+DCP                  0.8746       0.0516       0.6596       0.9600      
+AOD-Net              0.7891       0.0941       0.4809       0.9352      
+DCPDN                0.8103       0.0756       0.5180       0.9419      
+Color-Constrained    0.8704       0.0655       0.6011       0.9789      
+
+======================================================================
+  DATASET: SOTS-Outdoor
+======================================================================
+
+Method               Mean PSNR    Std PSNR     Min PSNR     Max PSNR    
+----------------------------------------------------------------------
+DCP                  17.57        3.41         9.56         28.76       
+AOD-Net              23.55        3.39         12.02        31.58       
+DCPDN                26.00        3.44         14.92        32.34       
+Color-Constrained    26.77        4.83         13.38        39.98       
+
+Method               Mean SSIM    Std SSIM     Min SSIM     Max SSIM    
+----------------------------------------------------------------------
+DCP                  0.8709       0.0540       0.6850       0.9846      
+AOD-Net              0.9059       0.0476       0.7095       0.9810      
+DCPDN                0.8786       0.0446       0.6786       0.9627      
+Color-Constrained    0.9513       0.0311       0.7869       0.9929      
+
+======================================================================
+  DATASET: O-HAZE
+======================================================================
+
+Method               Mean PSNR    Std PSNR     Min PSNR     Max PSNR    
+----------------------------------------------------------------------
+DCP                  16.68        2.50         11.76        23.90       
+AOD-Net              16.94        2.52         11.97        22.11       
+DCPDN                17.18        3.17         11.35        24.89       
+Color-Constrained    16.92        2.95         11.84        24.39       
+
+Method               Mean SSIM    Std SSIM     Min SSIM     Max SSIM    
+----------------------------------------------------------------------
+DCP                  0.7340       0.0910       0.5560       0.9051      
+AOD-Net              0.6999       0.1056       0.4837       0.8758      
+DCPDN                0.7027       0.1158       0.4834       0.9179      
+Color-Constrained    0.7401       0.1177       0.4850       0.9401      
+
+======================================================================
+  MODEL INFO
+======================================================================
+
+  AOD-Net:
+    Parameters:      1,785
+    Checkpoint size:  0.02 MB
+    Checkpoint path:  /home/coder/Computer_vision_project/Project/checkpoints/aodnet_ots_best.pth
+
+  DCPDN:
+    Parameters:      4,390,500
+    Checkpoint size:  16.85 MB
+    Checkpoint path:  /home/coder/Computer_vision_project/Project/checkpoints/dcpdn_ots_best.pth
+
+  Color-Constrained:
+    Parameters:      23,420,006
+    Checkpoint size:  89.45 MB
+    Checkpoint path:  /home/coder/Computer_vision_project/Project/checkpoints/color_dehaze_ots_best.pth
