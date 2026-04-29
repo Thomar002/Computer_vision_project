@@ -25,7 +25,7 @@ def get_device():
 
 def best_checkpoint_path(model_name, train_set):
     """Return best-checkpoint path using the same split suffix as train.py."""
-    suffix = "" if train_set == "auto" else f"_{train_set}"
+    suffix = "" if train_set in ("auto", "its") else f"_{train_set}"
     return os.path.join(CHECKPOINTS_DIR, f"{model_name}{suffix}_best.pth")
 
 
@@ -140,7 +140,7 @@ def main():
 
     # Build report
     os.makedirs(OUTPUTS_DIR, exist_ok=True)
-    output_path = os.path.join(OUTPUTS_DIR, "results.txt")
+    output_path = os.path.join(OUTPUTS_DIR, f"results_{args.train_set}.txt")
 
     lines = []
     lines.append("=" * 70)
