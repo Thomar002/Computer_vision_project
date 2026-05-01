@@ -17,13 +17,13 @@ OTS_TRAIN_GT = os.path.join(DATASETS_DIR, "OTS-reside", "clear")
 
 # SOTS (Testing)
 SOTS_INDOOR_HAZY = os.path.join(DATASETS_DIR, "SOTS", "indoor", "hazy")
-SOTS_INDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "indoor", "gt")
+SOTS_INDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "indoor", "clear")
 SOTS_OUTDOOR_HAZY = os.path.join(DATASETS_DIR, "SOTS", "outdoor", "hazy")
-SOTS_OUTDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "outdoor", "gt")
+SOTS_OUTDOOR_GT = os.path.join(DATASETS_DIR, "SOTS", "outdoor", "clear")
 
 # O-HAZE
 OHAZE_HAZY = os.path.join(DATASETS_DIR, "O-HAZY", "hazy")
-OHAZE_GT = os.path.join(DATASETS_DIR, "O-HAZY", "GT")
+OHAZE_GT = os.path.join(DATASETS_DIR, "O-HAZY", "clear")
 
 # Output paths
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
